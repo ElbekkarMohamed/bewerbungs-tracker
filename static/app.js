@@ -106,20 +106,65 @@ async function loadStats() {
     }
 }
 
+function addTextCell(row, text) {
+    const cell = document.createElement("td");
+    cell.textContent = text;
+    row.append(cell);
+}
+
+async function updateStatus(application, newStatus) {
+    try {
+        await api(`/api/applications/${application.id}`, {
+            method: "PUT",
+            body: JSON.stringify({ ...application, status: newStatus }),
+        });
+    } catch (error) {
+        alert(error.message);
+    }
+    loadDashboard();
+}
+
+async function deleteApplication(application) {
+    if (!confirm(`Bewerbung bei ${application.company} wirklich löschen?`)) {
+        return;
+    }
+    try {
+        await api(`/api/applications/${application.id}`, { method: "DELETE" });
+    } catch (error) {
+        alert(error.message);
+    }
+    loadDashboard();
+}
+
 function createRow(application) {
     const row = document.createElement("tr");
-    const values = [
-        application.company,
-        application.position,
-        formatDate(application.applied_on),
-        STATUS_LABELS[application.status],
-        application.notes || "",
-    ];
-    for (const value of values) {
-        const cell = document.createElement("td");
-        cell.textContent = value;
-        row.append(cell);
+    addTextCell(row, application.company);
+    addTextCell(row, application.position);
+    addTextCell(row, formatDate(application.applied_on));
+
+    const statusSelect = document.createElement("select");
+    for (const [status, label] of Object.entries(STATUS_LABELS)) {
+        const option = document.createElement("option");
+        option.value = status;
+        option.textContent = label;
+        statusSelect.append(option);
     }
+    statusSelect.value = application.status;
+    statusSelect.addEventListener("change", () => updateStatus(application, statusSelect.value));
+    const statusCell = document.createElement("td");
+    statusCell.append(statusSelect);
+    row.append(statusCell);
+
+    addTextCell(row, application.notes || "");
+
+    const deleteButton = document.createElement("button");
+    deleteButton.textContent = "Löschen";
+    deleteButton.className = "danger";
+    deleteButton.addEventListener("click", () => deleteApplication(application));
+    const actionCell = document.createElement("td");
+    actionCell.append(deleteButton);
+    row.append(actionCell);
+
     return row;
 }
 
