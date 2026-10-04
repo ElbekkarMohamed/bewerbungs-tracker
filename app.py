@@ -30,6 +30,31 @@ def health():
     user_count = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     return jsonify({"status": "ok", "users": user_count})
 
+def parse_application(data):
+    company = (data.get("company") or "").strip()
+    position = (data.get("position") or "").strip()
+    applied_on = (data.get("applied_on") or "").strip()
+    status = data.get("status") or "applied"
+    notes = (data.get("notes") or "").strip() or None
+
+    if not company or not position or not applied_on:
+        return None, "Firma, Stelle und Datum sind erforderlich."
+    try:
+        date.fromisoformat(applied_on)
+    except ValueError:
+        return None, "Das Datum muss im Format JJJJ-MM-TT sein."
+    if status not in VALID_STATUSES:
+        return None, "Ungültiger Status."
+
+    values = {
+        "company": company,
+        "position": position,
+        "applied_on": applied_on,
+        "status": status,
+        "notes": notes,
+    }
+    return values, None
+
 
 @app.route("/api/register", methods=["POST"])
 def register():
@@ -95,27 +120,16 @@ def logout():
 @app.route("/api/applications", methods=["POST"])
 @login_required
 def create_application():
-    data = request.get_json(silent=True) or {}
-    company = (data.get("company") or "").strip()
-    position = (data.get("position") or "").strip()
-    applied_on = (data.get("applied_on") or "").strip()
-    status = data.get("status") or "applied"
-    notes = (data.get("notes") or "").strip()
-
-    if not company or not position or not applied_on:
-        return jsonify({"error": "Firma, Stelle und Datum sind erforderlich."}), 400
-    try:
-        date.fromisoformat(applied_on)
-    except ValueError:
-        return jsonify({"error": "Das Datum muss im Format JJJJ-MM-TT sein."}), 400
-    if status not in VALID_STATUSES:
-        return jsonify({"error": "Ungültiger Status."}), 400
+    values, error = parse_application(request.get_json(silent=True) or {})
+    if error:
+        return jsonify({"error": error}), 400
 
     db = get_db()
     cursor = db.execute(
         """INSERT INTO applications (user_id, company, position, applied_on, status, notes)
            VALUES (?, ?, ?, ?, ?, ?)""",
-        (g.user_id, company, position, applied_on, status, notes),
+        (g.user_id, values["company"], values["position"],
+         values["applied_on"], values["status"], values["notes"]),
     )
     db.commit()
     return jsonify({"id": cursor.lastrowid, "message": "Bewerbung gespeichert."}), 201
