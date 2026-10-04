@@ -1,9 +1,11 @@
+import os
 import sqlite3
-from flask import Flask, jsonify, request
-from werkzeug.security import generate_password_hash
+from flask import Flask, jsonify, request, session
+from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db, close_db, init_db
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
 app.teardown_appcontext(close_db)
 init_db()
 
@@ -38,6 +40,24 @@ def register():
 
     return jsonify({"message": "Registrierung erfolgreich."}), 201
 
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
+
+    db = get_db()
+    user = db.execute(
+        "SELECT id, username, password_hash FROM users WHERE username = ?",
+        (username,),
+    ).fetchone()
+
+    if user is None or not check_password_hash(user["password_hash"], password):
+        return jsonify({"error": "Benutzername oder Passwort ist falsch."}), 401
+
+    session.clear()
+    session["user_id"] = user["id"]
+    return jsonify({"message": "Login erfolgreich.", "username": user["username"]})
 
 if __name__ == "__main__":
     app.run(debug=True)
