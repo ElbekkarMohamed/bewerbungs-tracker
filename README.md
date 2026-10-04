@@ -4,7 +4,7 @@ Eine kleine Fullstack-Webanwendung zum Verwalten eigener Bewerbungen, mit Benutz
 
 *A small full-stack web app (Flask, SQLite, vanilla JavaScript) to track job applications.*
 
-![Screenshot](docs/screenshot.png)
+![Screenshot](docs/Screenshot.png)
 
 ## Funktionen
 
