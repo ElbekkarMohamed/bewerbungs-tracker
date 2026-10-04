@@ -21,6 +21,7 @@ function showDashboard(username) {
     document.getElementById("auth-section").hidden = true;
     document.getElementById("dashboard-section").hidden = false;
     document.getElementById("user-info").hidden = false;
+    loadDashboard();
 }
 
 async function init() {
@@ -74,4 +75,80 @@ document.getElementById("logout-btn").addEventListener("click", async () => {
     await api("/api/logout", { method: "POST" });
     showAuth();
 });
+
+const STATUS_LABELS = {
+    applied: "Beworben",
+    interview: "Gespräch",
+    offer: "Zusage",
+    rejected: "Absage",
+};
+
+function formatDate(isoDate) {
+    return isoDate.split("-").reverse().join(".");
+}
+
+function createStat(label, value) {
+    const div = document.createElement("div");
+    div.className = "stat";
+    const strong = document.createElement("strong");
+    strong.textContent = value;
+    div.append(strong, label);
+    return div;
+}
+
+async function loadStats() {
+    const stats = await api("/api/stats");
+    const container = document.getElementById("stats");
+    container.innerHTML = "";
+    container.append(createStat("Gesamt", stats.total));
+    for (const [status, label] of Object.entries(STATUS_LABELS)) {
+        container.append(createStat(label, stats.by_status[status]));
+    }
+}
+
+function createRow(application) {
+    const row = document.createElement("tr");
+    const values = [
+        application.company,
+        application.position,
+        formatDate(application.applied_on),
+        STATUS_LABELS[application.status],
+        application.notes || "",
+    ];
+    for (const value of values) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+    }
+    return row;
+}
+
+async function loadApplications() {
+    const filter = document.getElementById("filter").value;
+    const path = filter ? `/api/applications?status=${filter}` : "/api/applications";
+    const applications = await api(path);
+
+    const tbody = document.getElementById("applications-body");
+    tbody.innerHTML = "";
+    if (applications.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 6;
+        cell.textContent = "Noch keine Bewerbungen.";
+        row.append(cell);
+        tbody.append(row);
+        return;
+    }
+    for (const application of applications) {
+        tbody.append(createRow(application));
+    }
+}
+
+async function loadDashboard() {
+    await loadStats();
+    await loadApplications();
+}
+
+document.getElementById("filter").addEventListener("change", loadApplications);
+
 init();
