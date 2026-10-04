@@ -24,6 +24,10 @@ def login_required(view):
     return wrapped
 
 
+@app.route("/")
+def index():
+    return app.send_static_file("index.html")
+
 @app.route("/api/health")
 def health():
     db = get_db()

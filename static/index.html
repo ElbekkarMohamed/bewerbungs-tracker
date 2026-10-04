@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bewerbungs-Tracker</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>Bewerbungs-Tracker</h1>
+        <div id="user-info" hidden>
+            <span id="username"></span>
+            <button id="logout-btn" class="secondary">Logout</button>
+        </div>
+    </header>
+
+    <main>
+        <section id="auth-section">
+            <h2>Anmelden</h2>
+            <form id="auth-form">
+                <label>Benutzername
+                    <input id="auth-username" required>
+                </label>
+                <label>Passwort
+                    <input id="auth-password" type="password" required>
+                </label>
+                <div class="buttons">
+                    <button type="submit">Login</button>
+                    <button type="button" id="register-btn" class="secondary">Registrieren</button>
+                </div>
+                <p id="auth-message" class="message"></p>
+            </form>
+        </section>
+
+        <section id="dashboard-section" hidden>
+            <div id="stats"></div>
+
+            <h2>Neue Bewerbung</h2>
+            <form id="application-form">
+                <label>Firma
+                    <input id="company" required>
+                </label>
+                <label>Stelle
+                    <input id="position" required>
+                </label>
+                <label>Datum
+                    <input id="applied-on" type="date" required>
+                </label>
+                <label>Status
+                    <select id="status">
+                        <option value="applied">Beworben</option>
+                        <option value="interview">Gespräch</option>
+                        <option value="offer">Zusage</option>
+                        <option value="rejected">Absage</option>
+                    </select>
+                </label>
+                <label>Notizen
+                    <textarea id="notes" rows="2"></textarea>
+                </label>
+                <button type="submit">Speichern</button>
+                <p id="form-message" class="message"></p>
+            </form>
+
+            <h2>Meine Bewerbungen</h2>
+            <label>Filter
+                <select id="filter">
+                    <option value="">Alle</option>
+                    <option value="applied">Beworben</option>
+                    <option value="interview">Gespräch</option>
+                    <option value="offer">Zusage</option>
+                    <option value="rejected">Absage</option>
+                </select>
+            </label>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Firma</th>
+                        <th>Stelle</th>
+                        <th>Datum</th>
+                        <th>Status</th>
+                        <th>Notizen</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="applications-body"></tbody>
+            </table>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
