@@ -185,5 +185,20 @@ def update_application(app_id):
     return jsonify({"message": "Bewerbung aktualisiert."})
 
 
+@app.route("/api/applications/<int:app_id>", methods=["DELETE"])
+@login_required
+def delete_application(app_id):
+    db = get_db()
+    cursor = db.execute(
+        "DELETE FROM applications WHERE id = ? AND user_id = ?",
+        (app_id, g.user_id),
+    )
+    db.commit()
+
+    if cursor.rowcount == 0:
+        return jsonify({"error": "Bewerbung nicht gefunden."}), 404
+    return jsonify({"message": "Bewerbung gelöscht."})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
