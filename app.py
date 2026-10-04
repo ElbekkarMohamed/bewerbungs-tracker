@@ -121,5 +121,33 @@ def create_application():
     return jsonify({"id": cursor.lastrowid, "message": "Bewerbung gespeichert."}), 201
 
 
+@app.route("/api/applications")
+@login_required
+def list_applications():
+    status = request.args.get("status")
+    db = get_db()
+
+    if status:
+        if status not in VALID_STATUSES:
+            return jsonify({"error": "Ungültiger Status."}), 400
+        rows = db.execute(
+            """SELECT id, company, position, applied_on, status, notes
+               FROM applications
+               WHERE user_id = ? AND status = ?
+               ORDER BY applied_on DESC""",
+            (g.user_id, status),
+        ).fetchall()
+    else:
+        rows = db.execute(
+            """SELECT id, company, position, applied_on, status, notes
+               FROM applications
+               WHERE user_id = ?
+               ORDER BY applied_on DESC""",
+            (g.user_id,),
+        ).fetchall()
+
+    return jsonify([dict(row) for row in rows])
+
+
 if __name__ == "__main__":
     app.run(debug=True)
