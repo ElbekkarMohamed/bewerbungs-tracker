@@ -151,4 +151,28 @@ async function loadDashboard() {
 
 document.getElementById("filter").addEventListener("change", loadApplications);
 
+
+const applicationForm = document.getElementById("application-form");
+const formMessage = document.getElementById("form-message");
+
+applicationForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const body = JSON.stringify({
+        company: document.getElementById("company").value,
+        position: document.getElementById("position").value,
+        applied_on: document.getElementById("applied-on").value,
+        status: document.getElementById("status").value,
+        notes: document.getElementById("notes").value,
+    });
+    try {
+        await api("/api/applications", { method: "POST", body });
+        applicationForm.reset();
+        setMessage(formMessage, "Bewerbung gespeichert.", "success");
+        loadDashboard();
+    } catch (error) {
+        setMessage(formMessage, error.message, "error");
+    }
+});
+
+
 init();
