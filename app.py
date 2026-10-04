@@ -200,5 +200,24 @@ def delete_application(app_id):
     return jsonify({"message": "Bewerbung gelöscht."})
 
 
+@app.route("/api/stats")
+@login_required
+def stats():
+    db = get_db()
+    rows = db.execute(
+        """SELECT status, COUNT(*) AS count
+           FROM applications
+           WHERE user_id = ?
+           GROUP BY status""",
+        (g.user_id,),
+    ).fetchall()
+
+    counts = {status: 0 for status in VALID_STATUSES}
+    for row in rows:
+        counts[row["status"]] = row["count"]
+
+    return jsonify({"total": sum(counts.values()), "by_status": counts})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
