@@ -1,4 +1,6 @@
-from flask import Flask, jsonify
+import sqlite3
+from flask import Flask, jsonify, request
+from werkzeug.security import generate_password_hash
 from db import get_db, close_db, init_db
 
 app = Flask(__name__)
@@ -11,6 +13,30 @@ def health():
     db = get_db()
     user_count = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     return jsonify({"status": "ok", "users": user_count})
+
+
+@app.route("/api/register", methods=["POST"])
+def register():
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
+
+    if not username or not password:
+        return jsonify({"error": "Benutzername und Passwort sind erforderlich."}), 400
+    if len(password) < 8:
+        return jsonify({"error": "Das Passwort muss mindestens 8 Zeichen lang sein."}), 400
+
+    db = get_db()
+    try:
+        db.execute(
+            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+            (username, generate_password_hash(password)),
+        )
+        db.commit()
+    except sqlite3.IntegrityError:
+        return jsonify({"error": "Dieser Benutzername ist bereits vergeben."}), 409
+
+    return jsonify({"message": "Registrierung erfolgreich."}), 201
 
 
 if __name__ == "__main__":
