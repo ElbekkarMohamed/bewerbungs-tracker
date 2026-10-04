@@ -1,6 +1,7 @@
 import os
 import sqlite3
-from flask import Flask, jsonify, request, session
+from functools import wraps
+from flask import Flask, jsonify, request, session, g
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db, close_db, init_db
 
@@ -8,6 +9,16 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
 app.teardown_appcontext(close_db)
 init_db()
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        user_id = session.get("user_id")
+        if user_id is None:
+            return jsonify({"error": "Nicht eingeloggt."}), 401
+        g.user_id = user_id
+        return view(*args, **kwargs)
+    return wrapped
 
 
 @app.route("/api/health")
@@ -62,15 +73,12 @@ def login():
 
 
 @app.route("/api/me")
+@login_required
 def me():
-    user_id = session.get("user_id")
-    if user_id is None:
-        return jsonify({"error": "Nicht eingeloggt."}), 401
-
     db = get_db()
     user = db.execute(
         "SELECT id, username FROM users WHERE id = ?",
-        (user_id,),
+        (g.user_id,),
     ).fetchone()
     return jsonify({"id": user["id"], "username": user["username"]})
 
