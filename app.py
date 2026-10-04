@@ -163,5 +163,27 @@ def list_applications():
     return jsonify([dict(row) for row in rows])
 
 
+@app.route("/api/applications/<int:app_id>", methods=["PUT"])
+@login_required
+def update_application(app_id):
+    values, error = parse_application(request.get_json(silent=True) or {})
+    if error:
+        return jsonify({"error": error}), 400
+
+    db = get_db()
+    cursor = db.execute(
+        """UPDATE applications
+           SET company = ?, position = ?, applied_on = ?, status = ?, notes = ?
+           WHERE id = ? AND user_id = ?""",
+        (values["company"], values["position"], values["applied_on"],
+         values["status"], values["notes"], app_id, g.user_id),
+    )
+    db.commit()
+
+    if cursor.rowcount == 0:
+        return jsonify({"error": "Bewerbung nicht gefunden."}), 404
+    return jsonify({"message": "Bewerbung aktualisiert."})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
