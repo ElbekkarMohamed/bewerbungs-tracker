@@ -1,6 +1,7 @@
 import os
 import sqlite3
 from functools import wraps
+from datetime import date
 from flask import Flask, jsonify, request, session, g
 from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db, close_db, init_db
@@ -9,6 +10,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
 app.teardown_appcontext(close_db)
 init_db()
+
+VALID_STATUSES = {"applied", "interview", "offer", "rejected"}
 
 def login_required(view):
     @wraps(view)
@@ -87,6 +90,35 @@ def me():
 def logout():
     session.clear()
     return jsonify({"message": "Logout erfolgreich."})
+
+
+@app.route("/api/applications", methods=["POST"])
+@login_required
+def create_application():
+    data = request.get_json(silent=True) or {}
+    company = (data.get("company") or "").strip()
+    position = (data.get("position") or "").strip()
+    applied_on = (data.get("applied_on") or "").strip()
+    status = data.get("status") or "applied"
+    notes = (data.get("notes") or "").strip()
+
+    if not company or not position or not applied_on:
+        return jsonify({"error": "Firma, Stelle und Datum sind erforderlich."}), 400
+    try:
+        date.fromisoformat(applied_on)
+    except ValueError:
+        return jsonify({"error": "Das Datum muss im Format JJJJ-MM-TT sein."}), 400
+    if status not in VALID_STATUSES:
+        return jsonify({"error": "Ungültiger Status."}), 400
+
+    db = get_db()
+    cursor = db.execute(
+        """INSERT INTO applications (user_id, company, position, applied_on, status, notes)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (g.user_id, company, position, applied_on, status, notes),
+    )
+    db.commit()
+    return jsonify({"id": cursor.lastrowid, "message": "Bewerbung gespeichert."}), 201
 
 
 if __name__ == "__main__":
