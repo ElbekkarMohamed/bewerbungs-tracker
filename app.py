@@ -40,6 +40,7 @@ def register():
 
     return jsonify({"message": "Registrierung erfolgreich."}), 201
 
+
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
@@ -58,6 +59,27 @@ def login():
     session.clear()
     session["user_id"] = user["id"]
     return jsonify({"message": "Login erfolgreich.", "username": user["username"]})
+
+
+@app.route("/api/me")
+def me():
+    user_id = session.get("user_id")
+    if user_id is None:
+        return jsonify({"error": "Nicht eingeloggt."}), 401
+
+    db = get_db()
+    user = db.execute(
+        "SELECT id, username FROM users WHERE id = ?",
+        (user_id,),
+    ).fetchone()
+    return jsonify({"id": user["id"], "username": user["username"]})
+
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"message": "Logout erfolgreich."})
+
 
 if __name__ == "__main__":
     app.run(debug=True)
